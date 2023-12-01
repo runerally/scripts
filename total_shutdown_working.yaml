@@ -1,0 +1,307 @@
+- name: Total stop of Starfleet in case of powerloss
+  hosts: "proxmox_zfs"
+  gather_facts: true
+  ignore_errors: true
+  tasks:
+    - name: Migrate pct 1001-1020 and qm 1001-1020 to Enterprise (serves as a restart only Enterprise in low powermode)
+      shell: |
+          qm migrate 1001 01-Enterprise --with-local-disks --online
+          qm migrate 1002 01-Enterprise --with-local-disks --online 
+          qm migrate 1003 01-Enterprise --with-local-disks --online
+          qm migrate 1004 01-Enterprise --with-local-disks --online
+          qm migrate 1005 01-Enterprise --with-local-disks --online
+          qm migrate 1006 01-Enterprise --with-local-disks --online
+          qm migrate 1007 01-Enterprise --with-local-disks --online
+          qm migrate 1008 01-Enterprise --with-local-disks --online
+          qm migrate 1009 01-Enterprise --with-local-disks --online
+          qm migrate 1010 01-Enterprise --with-local-disks --online
+          qm migrate 1011 01-Enterprise --with-local-disks --online
+          qm migrate 1012 01-Enterprise --with-local-disks --online
+          qm migrate 1013 01-Enterprise --with-local-disks --online
+          qm migrate 1014 01-Enterprise --with-local-disks --online
+          qm migrate 1014 01-Enterprise --with-local-disks --online
+          qm migrate 1015 01-Enterprise --with-local-disks --online
+          qm migrate 1016 01-Enterprise --with-local-disks --online
+          qm migrate 1017 01-Enterprise --with-local-disks --online
+          qm migrate 1018 01-Enterprise --with-local-disks --online
+          qm migrate 1019 01-Enterprise --with-local-disks --online
+          qm migrate 1020 01-Enterprise --with-local-disks --online
+          pct migrate 1001 01-Enterprise --restart
+          pct migrate 1002 01-Enterprise --restart
+          pct migrate 1003 01-Enterprise --restart
+          pct migrate 1004 01-Enterprise --restart
+          pct migrate 1005 01-Enterprise --restart
+          pct migrate 1006 01-Enterprise --restart
+          pct migrate 1007 01-Enterprise --restart
+          pct migrate 1008 01-Enterprise --restart
+          pct migrate 1009 01-Enterprise --restart
+          pct migrate 1010 01-Enterprise --restart
+          pct migrate 1011 01-Enterprise --restart
+          pct migrate 1012 01-Enterprise --restart
+          pct migrate 1013 01-Enterprise --restart
+          pct migrate 1014 01-Enterprise --restart
+          pct migrate 1015 01-Enterprise --restart
+          pct migrate 1016 01-Enterprise --restart
+          pct migrate 1017 01-Enterprise --restart
+          pct migrate 1018 01-Enterprise --restart
+          pct migrate 1019 01-Enterprise --restart
+          pct migrate 1020 01-Enterprise --restart
+
+
+
+- name: Stop the clients from using the Block Device images, pct 2001-2020 and 9001-9020, qm 2001-2020 an qm 9001-9020
+  hosts: "proxmox_ceph"
+  gather_facts: true
+  ignore_errors: true
+  tasks:
+    - name: Stop the clients from using the Block Device images, pct 2001-2020 and 9001-9020, qm 2001-2020 an qm 9001-9020
+      shell: |
+          pct stop 2001
+          pct stop 2002
+          pct stop 2003
+          pct stop 2004
+          pct stop 2005
+          pct stop 2006
+          pct stop 2007
+          pct stop 2008
+          pct stop 2010
+          pct stop 2011
+          pct stop 2012
+          pct stop 2013
+          pct stop 2014
+          pct stop 2015
+          pct stop 2016
+          pct stop 2017
+          pct stop 2018
+          pct stop 2019
+          pct stop 2020
+          qm stop 2001
+          qm stop 2002
+          qm stop 2003
+          qm stop 2004
+          qm stop 2005
+          qm stop 2006
+          qm stop 2007
+          qm stop 2008
+          qm stop 2009
+          qm stop 2010
+          qm stop 2011
+          qm stop 2012
+          qm stop 2013
+          qm stop 2014
+          qm stop 2015
+          qm stop 2016
+          qm stop 2017
+          qm stop 2018
+          qm stop 2019
+          qm stop 2020
+          pct stop 9001
+          pct stop 9002
+          pct stop 9003
+          pct stop 9004
+          pct stop 9005
+          pct stop 9006
+          pct stop 9007
+          pct stop 9008
+          pct stop 9009
+          pct stop 9010
+          pct stop 9011
+          pct stop 9012
+          pct stop 9013
+          pct stop 9014
+          pct stop 9015
+          pct stop 9016
+          pct stop 9017
+          pct stop 9018
+          pct stop 9019
+          pct stop 9020
+          qm stop 9001
+          qm stop 9002
+          qm stop 9003
+          qm stop 9004
+          qm stop 9005
+          qm stop 9006
+          qm stop 9007
+          qm stop 9008
+          qm stop 9009
+          qm stop 9010
+          qm stop 9011
+          qm stop 9012
+          qm stop 9013
+          qm stop 9014
+          qm stop 9015
+          qm stop 9016
+          qm stop 9017
+          qm stop 9018
+          qm stop 9019
+          qm stop 9020
+
+
+
+- name: Check Ceph Status HEALTH_OK, timeout 60s
+  hosts: "enterprise"
+  gather_facts: false
+  ignore_errors: true
+
+  tasks:
+    - name: Check Ceph Health
+      command: bash -c "timeout 60 bash -c 'while ! ceph health | grep -q \"HEALTH_OK\"; do sleep 10; done'"
+      register: ceph_health_output
+      changed_when: false
+
+- name: Set OSD flags for stop
+  hosts: "enterprise"
+  gather_facts: false
+  tasks:
+    - name: noout, norecover, norebalance, nobackfill, nodown, pause
+      shell: |
+          ceph osd set noout
+          ceph osd set norecover
+          ceph osd set norebalance
+          ceph osd set nobackfill
+          ceph osd set nodown
+          ceph osd set pause
+
+- name: Set CephFS for stop
+  hosts: "enterprise"
+  gather_facts: false
+  tasks:
+    - name: Stop cephFS from being joinable
+      shell: ceph fs set cephfs max_mds 1
+
+    - name: set cephFS state to fail
+      shell: ceph fs fail cephfs
+
+    - name: Pause for 10 sec
+      pause:
+        seconds: 10
+
+- name: Shutdown ha-zfs
+  hosts: "proxmox_zfs"
+
+  ignore_errors: true
+  tasks:
+    - name: stop qm 1001-1020 and pct 1001-1020 on both hosts (if migrations failes)
+      shell: |
+          qm stop 1001
+          qm stop 1002
+          qm stop 1003
+          qm stop 1004
+          qm stop 1005
+          qm stop 1006
+          qm stop 1007
+          qm stop 1008
+          qm stop 1009
+          qm stop 1010
+          qm stop 1011
+          qm stop 1012
+          qm stop 1013
+          qm stop 1014
+          qm stop 1015
+          qm stop 1016
+          qm stop 1017
+          qm stop 1018
+          qm stop 1019
+          qm stop 1020
+          pct stop 1001
+          pct stop 1002
+          pct stop 1003
+          pct stop 1004
+          pct stop 1005
+          pct stop 1006
+          pct stop 1007
+          pct stop 1008
+          pct stop 1009
+          pct stop 1010
+          pct stop 1011
+          pct stop 1012
+          pct stop 1013
+          pct stop 1014
+          pct stop 1015
+          pct stop 1016
+          pct stop 1017
+          pct stop 1018
+          pct stop 1019
+          pct stop 1020
+
+- name: shutdown Stargazer
+  hosts: "stargazer"
+  gather_facts: false
+  ignore_errors: true
+  ignore_unreachable: true
+
+  tasks:
+      - name: Shutdown Stargazer now
+        community.general.shutdown:
+
+      - name: Pause for 10 sec
+        pause:
+          seconds: 10
+
+- name: shutdown Defiant
+  hosts: "defiant"
+  gather_facts: false
+  ignore_errors: true
+  ignore_unreachable: true
+
+  tasks:
+      - name: shutdown Defiant now
+        community.general.shutdown:
+
+      - name: Pause for 10 sec
+        pause:
+          seconds: 10
+
+- name: shutdown Titan
+  hosts: "titan"
+  gather_facts: false
+  ignore_errors: true
+  ignore_unreachable: true
+
+  tasks:
+      - name: shutdown Titan now
+        community.general.shutdown:
+
+      - name: Pause for 10 sec
+        pause:
+          seconds: 10
+
+
+- name: shutdown Enterprise
+  hosts: "enterprise"
+  gather_facts: false
+  ignore_errors: true
+  ignore_unreachable: true
+
+  tasks:
+      - name: shutdown Enterprise
+        community.general.shutdown:
+
+      - name: Pause for 10 sec
+        pause:
+          seconds: 10
+
+- name: shutdown Shuttlecraft
+  hosts: "shuttlecraft"
+  gather_facts: false
+  ignore_errors: true
+  ignore_unreachable: true
+
+  tasks:
+      - name: shutdown Shuttlecraft now
+        community.general.shutdown:
+
+      - name: shutdown for 10 sec
+        pause:
+          seconds: 10
+
+- name: shutdown Voyager
+  hosts: "voyager"
+  gather_facts: false
+  ignore_errors: true
+  ignore_unreachable: true
+
+  tasks:
+      - name: shutdown Voyager
+        community.general.shutdown:
+
