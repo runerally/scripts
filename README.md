@@ -2,6 +2,7 @@
 Just some scripts I use
 
 naming convention in the hosts file:
+
 [starfleet]
 #All nodes including q-dev
 
